@@ -72,7 +72,6 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
             lambda image: tf.random_crop(image, [256, 256, 3], seed=1))
         dataset_frame2 = dataset_frame2.prefetch(8)
 
-
         data_list_frame3 = dataset_frame3.read_data_list_file()
         data_list_frame3 = data_list_frame3[::FLAGS.training_data_step]
         dataset_frame3 = tf.data.Dataset.from_tensor_slices(tf.constant(data_list_frame3))
@@ -148,15 +147,15 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
             print('%s: Pre-trained model restored from %s' %
                   (datetime.now(), FLAGS.pretrained_model_checkpoint_path))
             sess.run([batch_frame1.initializer, batch_frame2.initializer, batch_frame3.initializer])
+            meta_model_file = 'hed_model/new-model.ckpt'
+            saver2 = tf.train.Saver(var_list=[v for v in tf.all_variables() if "hed" in v.name])
+            saver2.restore(sess, meta_model_file)
         else:
             # Build an initialization operation to run below.
             init = tf.initialize_all_variables()
             sess = tf.Session()
             sess.run([init, batch_frame1.initializer, batch_frame2.initializer, batch_frame3.initializer])
 
-        meta_model_file = 'hed_model/new-model.ckpt'
-        saver2 = tf.train.Saver(var_list=[v for v in tf.all_variables() if "hed" in v.name])
-        saver2.restore(sess, meta_model_file)
 
         # Summary Writter
         summary_writer = tf.summary.FileWriter(
@@ -293,10 +292,10 @@ def test(dataset_frame1, dataset_frame2, dataset_frame3):
 if __name__ == '__main__':
 
     if FLAGS.subset == 'train':
-        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-        data_list_path_frame1 = "data_list/ucf101_train_files_frame1.txt"
-        data_list_path_frame2 = "data_list/ucf101_train_files_frame2.txt"
-        data_list_path_frame3 = "data_list/ucf101_train_files_frame3.txt"
+        # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+        data_list_path_frame1 = "data_list/frame1.txt"
+        data_list_path_frame2 = "data_list/frame2.txt"
+        data_list_path_frame3 = "data_list/frame3.txt"
 
         ucf101_dataset_frame1 = dataset.Dataset(data_list_path_frame1)
         ucf101_dataset_frame2 = dataset.Dataset(data_list_path_frame2)

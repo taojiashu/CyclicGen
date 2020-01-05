@@ -1,8 +1,7 @@
 import glob
 import os
+
 import numpy as np
-import cv2
-import operator
 
 data_path = 'UCF101_train'
 NUM = 276918
@@ -45,25 +44,13 @@ for i in range(len(classes)):
         idx = int(png_files[j][-8:-4])
         if png_files[j-1] == (png_files[j][:-8] + str(idx-1).zfill(4) + '.png') \
             and png_files[j+1] == (png_files[j][:-8] + str(idx+1).zfill(4) + '.png'):
-            img0 = cv2.imread(png_files[j-1]).astype(np.float32) / 255.0
-            img1 = cv2.imread(png_files[j]).astype(np.float32) / 255.0
-            img2 = cv2.imread(png_files[j+1]).astype(np.float32) / 255.0
-
-            psnr0 = psnr(img0, img1)
-            psnr1 = psnr(img1, img2)
-
-            triplets_dict.append((png_files[j], (psnr0 + psnr1) / 2.0))
-            # triplets_dict[png_files[i]] = (psnr0 + psnr1) / 2.0
-
-    triplets_dict = sorted(triplets_dict, key=lambda tup: tup[1])
-
-    print('class ' + str(i) + ', psnr threshold = ' + str(triplets_dict[filtered_counts[i]][1]))
+            triplets_dict.append(png_files[j])
 
     for j in range(filtered_counts[i]):
-        idx = int(triplets_dict[j][0][-8:-4])
-        f0.write('./'+triplets_dict[j][0][:-8] + str(idx-1).zfill(4) + '.png' + '\n')
-        f1.write('./'+triplets_dict[j][0][:-8] + str(idx).zfill(4) + '.png' + '\n')
-        f2.write('./'+triplets_dict[j][0][:-8] + str(idx+1).zfill(4) + '.png' + '\n')
+        idx = int(triplets_dict[j][-8:-4])
+        f0.write('./'+triplets_dict[j][:-8] + str(idx-1).zfill(4) + '.png' + '\n')
+        f1.write('./'+triplets_dict[j][:-8] + str(idx).zfill(4) + '.png' + '\n')
+        f2.write('./'+triplets_dict[j][:-8] + str(idx+1).zfill(4) + '.png' + '\n')
 
 f0.close()
 f1.close()

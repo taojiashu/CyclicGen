@@ -22,7 +22,7 @@ class Vgg16():
         base_path = os.path.abspath(os.path.dirname(__file__))
         weights_file = os.path.join(base_path, 'vgg16.npy')
 
-        self.data_dict = np.load(weights_file, encoding='latin1').item()
+        self.data_dict = np.load(weights_file, encoding='latin1', allow_pickle=True).item()
         # self.io.print_info("Model weights loaded from {}".format(self.cfgs['model_weights_path']))
 
         rgb_scaled = tf.subtract((input_image+tf.ones_like(input_image)),2)*255.
