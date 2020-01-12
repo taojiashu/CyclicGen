@@ -3,14 +3,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dataset
-import numpy as np
 import os
-import tensorflow as tf
 from datetime import datetime
+
+import numpy as np
+import tensorflow as tf
+from skimage.measure import compare_ssim as ssim
+
+import dataset
 from CyclicGen_model import Voxel_flow_model
 from utils.image_utils import imwrite
-from skimage.measure import compare_ssim as ssim
 from vgg16 import Vgg16
 
 FLAGS = tf.app.flags.FLAGS
@@ -43,9 +45,11 @@ def _read_image(filename):
     # image_decoded.set_shape([256, 256, 3])
     return tf.cast(image_decoded, dtype=tf.float32) / 127.5 - 1.0
 
+
 def random_scaling(image, seed=1):
     scaling = tf.random_uniform([], 0.4, 0.6, seed=seed)
-    return tf.image.resize_images(image, [tf.cast(tf.round(256*scaling), tf.int32), tf.cast(tf.round(256*scaling), tf.int32)])
+    return tf.image.resize_images(image, [tf.cast(tf.round(256 * scaling), tf.int32),
+                                          tf.cast(tf.round(256 * scaling), tf.int32)])
 
 
 def train(dataset_frame1, dataset_frame2, dataset_frame3):
@@ -91,14 +95,14 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
         input2 = batch_frame2.get_next()
         input3 = batch_frame3.get_next()
 
-        edge_vgg_1 = Vgg16(input1,reuse=None)
-        edge_vgg_3 = Vgg16(input3,reuse=True)
+        edge_vgg_1 = Vgg16(input1, reuse=None)
+        edge_vgg_3 = Vgg16(input3, reuse=True)
 
         edge_1 = tf.nn.sigmoid(edge_vgg_1.fuse)
         edge_3 = tf.nn.sigmoid(edge_vgg_3.fuse)
 
-        edge_1 = tf.reshape(edge_1,[-1,input1.get_shape().as_list()[1],input1.get_shape().as_list()[2],1])
-        edge_3 = tf.reshape(edge_3,[-1,input1.get_shape().as_list()[1],input1.get_shape().as_list()[2],1])
+        edge_1 = tf.reshape(edge_1, [-1, input1.get_shape().as_list()[1], input1.get_shape().as_list()[2], 1])
+        edge_3 = tf.reshape(edge_3, [-1, input1.get_shape().as_list()[1], input1.get_shape().as_list()[2], 1])
 
         with tf.variable_scope("Cycle_DVF"):
             model1 = Voxel_flow_model()
@@ -156,7 +160,6 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
             sess = tf.Session()
             sess.run([init, batch_frame1.initializer, batch_frame2.initializer, batch_frame3.initializer])
 
-
         # Summary Writter
         summary_writer = tf.summary.FileWriter(
             FLAGS.train_dir,
@@ -192,7 +195,7 @@ def validate(dataset_frame1, dataset_frame2, dataset_frame3):
     """Performs validation on model.
     Args:
     """
-    pass
+    return test(dataset_frame1, dataset_frame2, dataset_frame3)
 
 
 def test(dataset_frame1, dataset_frame2, dataset_frame3):
@@ -211,8 +214,12 @@ def test(dataset_frame1, dataset_frame2, dataset_frame3):
         edge_1 = tf.nn.sigmoid(edge_vgg_1.fuse)
         edge_3 = tf.nn.sigmoid(edge_vgg_3.fuse)
 
-        edge_1 = tf.reshape(edge_1, [-1, input_placeholder.get_shape().as_list()[1], input_placeholder.get_shape().as_list()[2], 1])
-        edge_3 = tf.reshape(edge_3, [-1, input_placeholder.get_shape().as_list()[1], input_placeholder.get_shape().as_list()[2], 1])
+        edge_1 = tf.reshape(edge_1,
+                            [-1, input_placeholder.get_shape().as_list()[1], input_placeholder.get_shape().as_list()[2],
+                             1])
+        edge_3 = tf.reshape(edge_3,
+                            [-1, input_placeholder.get_shape().as_list()[1], input_placeholder.get_shape().as_list()[2],
+                             1])
 
         with tf.variable_scope("Cycle_DVF"):
             # Prepare model.
@@ -264,9 +271,9 @@ def test(dataset_frame1, dataset_frame2, dataset_frame3):
                          target_placeholder: batch_data_frame2}
             # Run single step update.
             prediction_np, target_np, warped_img1, warped_img2 = sess.run([prediction,
-                                                                                       target_placeholder, model.warped_img1,
-                                                                                       model.warped_img2],
-                                                                                      feed_dict=feed_dict)
+                                                                           target_placeholder, model.warped_img1,
+                                                                           model.warped_img2],
+                                                                          feed_dict=feed_dict)
 
             imwrite('ucf101_interp_ours/' + str(UCF_index) + '/frame_01_CyclicGen.png', prediction_np[0][-1, :, :, :])
 
@@ -292,7 +299,6 @@ def test(dataset_frame1, dataset_frame2, dataset_frame3):
 if __name__ == '__main__':
 
     if FLAGS.subset == 'train':
-        # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
         data_list_path_frame1 = "data_list/frame1.txt"
         data_list_path_frame2 = "data_list/frame2.txt"
         data_list_path_frame3 = "data_list/frame3.txt"
@@ -304,8 +310,6 @@ if __name__ == '__main__':
         train(ucf101_dataset_frame1, ucf101_dataset_frame2, ucf101_dataset_frame3)
 
     elif FLAGS.subset == 'test':
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
-
         data_list_path_frame1 = "data_list/ucf101_test_files_frame1.txt"
         data_list_path_frame2 = "data_list/ucf101_test_files_frame2.txt"
         data_list_path_frame3 = "data_list/ucf101_test_files_frame3.txt"
